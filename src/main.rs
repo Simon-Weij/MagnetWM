@@ -208,19 +208,20 @@ impl WindowManager {
         self.windows = old_windows
             .into_iter()
             .filter(|window| {
-                if window.closed {
-                    for seat in self.seats.values_mut() {
-                        if let SeatOp::Move { window_proxy, .. }
-                        | SeatOp::Resize { window_proxy, .. } = &seat.op
-                        {
+                if !window.closed {
+                    return true;
+                }
+                for seat in self.seats.values_mut() {
+                    match &seat.op {
+                        SeatOp::Move { window_proxy, .. } | SeatOp::Resize { window_proxy, .. } => {
                             if window_proxy == &window.proxy {
                                 seat.op_end();
                             }
                         }
+                        SeatOp::None => (),
                     }
-                    return false;
                 }
-                true
+                false
             })
             .collect();
     }
