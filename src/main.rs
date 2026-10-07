@@ -2,7 +2,7 @@ use std::collections::{HashMap, VecDeque};
 use std::fmt::Debug;
 
 use wayland_backend::client::ObjectId;
-use wayland_client::{protocol::wl_registry, Connection, Dispatch, Proxy, QueueHandle};
+use wayland_client::{Connection, Dispatch, Proxy, QueueHandle, protocol::wl_registry};
 
 use crate::river::{
     river_node_v1::RiverNodeV1,
@@ -204,26 +204,22 @@ impl WindowManager {
     }
 
     fn remove_windows(&mut self) {
-        let old_windows = std::mem::take(&mut self.windows);
-        self.windows = old_windows
-            .into_iter()
-            .filter(|window| {
-                if !window.closed {
-                    return true;
-                }
-                for seat in self.seats.values_mut() {
-                    match &seat.op {
-                        SeatOp::Move { window_proxy, .. } | SeatOp::Resize { window_proxy, .. } => {
-                            if window_proxy == &window.proxy {
-                                seat.op_end();
-                            }
+        self.windows.retain(|window| {
+            if !window.closed {
+                return true;
+            }
+            for seat in self.seats.values_mut() {
+                match &seat.op {
+                    SeatOp::Move { window_proxy, .. } | SeatOp::Resize { window_proxy, .. } => {
+                        if window_proxy == &window.proxy {
+                            seat.op_end();
                         }
-                        SeatOp::None => (),
                     }
+                    SeatOp::None => (),
                 }
-                false
-            })
-            .collect();
+            }
+            false
+        })
     }
 
     fn remove_seats(&mut self) {
