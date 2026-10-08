@@ -13,7 +13,6 @@ mod interfaces {
     }
 }
 
-use self::interfaces::rwm::*;
-use self::interfaces::rxkb::*;
+use self::interfaces::{rwm::*, rxkb::*};
 wayland_scanner::generate_client_code!("./protocol/river-window-management-v1.xml");
 wayland_scanner::generate_client_code!("./protocol/river-xkb-bindings-v1.xml");
