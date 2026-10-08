@@ -109,11 +109,9 @@ impl Dispatch<RiverWindowManagerV1, ()> for AppData {
                     .river_xkb
                     .as_ref()
                     .expect("river_xkb_bindings_v1 missing");
-                state.wm.handle_manage_start(proxy, river_xkb, qh)
+                state.wm.handle_manage_start(proxy, river_xkb, qh);
             }
             Event::RenderStart => state.wm.handle_render_start(proxy),
-            Event::SessionLocked => {}
-            Event::SessionUnlocked => {}
             Event::Window { id } => state.wm.windows.push_back(Window::new(id, qh)),
             Event::Output { id } => {
                 state.wm.outputs.insert(id.id(), Output::new(id));
@@ -121,6 +119,7 @@ impl Dispatch<RiverWindowManagerV1, ()> for AppData {
             Event::Seat { id } => {
                 state.wm.seats.insert(id.id(), Seat::new(id));
             }
+            _ => {}
         }
     }
 
@@ -141,38 +140,20 @@ impl Dispatch<RiverWindowV1, ()> for AppData {
         _qh: &QueueHandle<Self>,
     ) {
         use protocol::river_window_v1::Event;
-        let window = match state.wm.windows.iter_mut().find(|o| &o.proxy == proxy) {
-            Some(window) => window,
-            None => return,
+        let Some(window) = state.wm.windows.iter_mut().find(|o| &o.proxy == proxy) else {
+            return;
         };
+
         match event {
             Event::Closed => window.closed = true,
-            Event::DimensionsHint {
-                min_width: _,
-                min_height: _,
-                max_width: _,
-                max_height: _,
-            } => {}
             Event::Dimensions { width, height } => (window.width, window.height) = (width, height),
-            Event::AppId { app_id: _ } => {}
-            Event::Title { title: _ } => {}
-            Event::Parent { parent: _ } => {}
-            Event::DecorationHint { hint: _ } => {}
             Event::PointerMoveRequested { seat } => window.pointer_move_requested = Some(seat),
             Event::PointerResizeRequested { seat, edges } => {
                 window.pointer_resize_requested = Some(seat);
                 window.pointer_resize_requested_edges =
                     edges.into_result().expect("Invalid edges for resize");
             }
-            Event::ShowWindowMenuRequested { x: _, y: _ } => {}
-            Event::MaximizeRequested => {}
-            Event::UnmaximizeRequested => {}
-            Event::FullscreenRequested { output: _ } => {}
-            Event::ExitFullscreenRequested => {}
-            Event::MinimizeRequested => {}
-            Event::UnreliablePid { unreliable_pid: _ } => {}
-            Event::PresentationHint { .. } => {}
-            Event::Identifier { .. } => {}
+            _ => {}
         }
     }
 }
@@ -192,14 +173,9 @@ impl Dispatch<RiverOutputV1, ()> for AppData {
             .outputs
             .get_mut(&proxy.id())
             .expect("Output not found");
-        match event {
-            Event::Removed => output.removed = true,
-            Event::WlOutput { name: _ } => {}
-            Event::Position { x: _, y: _ } => {}
-            Event::Dimensions {
-                width: _,
-                height: _,
-            } => {}
+
+        if matches!(event, Event::Removed) {
+            output.removed = true;
         }
     }
 }
@@ -217,16 +193,12 @@ impl Dispatch<RiverSeatV1, ()> for AppData {
         let seat = state.wm.seats.get_mut(&proxy.id()).expect("Seat not found");
         match event {
             Event::Removed => seat.removed = true,
-            Event::WlSeat { name: _ } => {}
             Event::PointerEnter { window } => seat.hovered = Some(window),
             Event::PointerLeave => seat.hovered = None,
             Event::WindowInteraction { window } => seat.interacted = Some(window),
-            Event::ShellSurfaceInteraction {
-                shell_surface: _shell_surface,
-            } => {}
             Event::OpDelta { dx, dy } => (seat.op_dx, seat.op_dy) = (dx, dy),
             Event::OpRelease => seat.op_release = true,
-            Event::PointerPosition { x: _, y: _ } => {}
+            _ => {}
         }
     }
 }
@@ -235,7 +207,7 @@ impl Dispatch<RiverXkbBindingV1, ObjectId> for AppData {
     fn event(
         state: &mut Self,
         proxy: &RiverXkbBindingV1,
-        event: <RiverXkbBindingV1 as Proxy>::Event,
+        _event: <RiverXkbBindingV1 as Proxy>::Event,
         data: &ObjectId,
         _conn: &Connection,
         _qh: &QueueHandle<Self>,
@@ -246,10 +218,8 @@ impl Dispatch<RiverXkbBindingV1, ObjectId> for AppData {
             .xkb_bindings
             .get(&proxy.id())
             .expect("xkb_binding not found");
-        match event {
-            Event::Pressed => seat.pending_action = binding.action,
-            Event::Released => {}
-            Event::StopRepeat => {}
+        if matches!(Event::Pressed, _) {
+            seat.pending_action = binding.action;
         }
     }
 }

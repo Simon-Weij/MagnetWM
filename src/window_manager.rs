@@ -110,7 +110,7 @@ impl WindowManager {
                 }
             }
             false
-        })
+        });
     }
 
     fn remove_seats(&mut self) {
@@ -162,7 +162,7 @@ impl WindowManager {
     }
 
     fn manage_windows(&mut self) {
-        for window in self.windows.iter_mut() {
+        for window in &mut self.windows {
             if let Some(seat_proxy) = window.pointer_move_requested.take() {
                 let seat = self
                     .seats
@@ -188,7 +188,11 @@ impl WindowManager {
                     .iter()
                     .position(|window| window.proxy == window_proxy)
                     .expect("Interacted window not found");
-                let window = self.windows.remove(i).unwrap();
+
+                let Some(window) = self.windows.remove(i) else {
+                    return;
+                };
+
                 self.windows.push_back(window);
             }
             seat.focus_top(&self.windows);

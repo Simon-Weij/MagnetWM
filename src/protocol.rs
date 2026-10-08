@@ -1,3 +1,5 @@
+#![allow(clippy::wildcard_imports)]
+
 pub extern crate wayland_client;
 pub use wayland_client::protocol::*;
 

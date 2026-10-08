@@ -26,7 +26,7 @@ pub struct Window {
 impl Window {
     pub fn new(proxy: RiverWindowV1, qh: &QueueHandle<AppData>) -> Self {
         let node = proxy.get_node(qh, ());
-        Window {
+        Self {
             proxy,
             node,
             new: true,

@@ -119,9 +119,7 @@ impl Seat {
                 .env_remove("WAYLAND_DEBUG")
                 .spawn()
             {
-                Ok(_) => {
-                    println!("spawned kitty")
-                }
+                Ok(_) => {}
                 Err(e) => eprintln!("Failed to spawn kitty: {e}"),
             },
             Action::Close => {
@@ -166,7 +164,7 @@ impl Seat {
         self.op = SeatOp::None;
     }
 
-    pub fn op_manage(&mut self) {
+    pub fn op_manage(&self) {
         match &self.op {
             SeatOp::None | SeatOp::Move { .. } => {}
             SeatOp::Resize {
@@ -195,16 +193,13 @@ impl Seat {
     }
 
     pub fn focus_top(&mut self, windows: &VecDeque<Window>) {
-        match windows.back() {
-            Some(window) => {
-                self.proxy.focus_window(&window.proxy);
-                window.node.place_top();
-                self.focused = Some(window.proxy.clone());
-            }
-            None => {
-                self.proxy.clear_focus();
-                self.focused = None;
-            }
+        if let Some(window) = windows.back() {
+            self.proxy.focus_window(&window.proxy);
+            window.node.place_top();
+            self.focused = Some(window.proxy.clone());
+        } else {
+            self.proxy.clear_focus();
+            self.focused = None;
         }
     }
 
