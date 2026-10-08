@@ -2,9 +2,10 @@ use std::collections::{HashMap, VecDeque};
 use std::fmt::Debug;
 
 use wayland_backend::client::ObjectId;
-use wayland_client::{Connection, Dispatch, Proxy, QueueHandle, protocol::wl_registry};
+use wayland_client::{protocol::wl_registry, Connection, Dispatch, Proxy, QueueHandle};
 
-use crate::river::{
+mod protocol;
+use crate::protocol::{
     river_node_v1::RiverNodeV1,
     river_output_v1::RiverOutputV1,
     river_pointer_binding_v1::RiverPointerBindingV1,
@@ -14,28 +15,6 @@ use crate::river::{
     river_xkb_binding_v1::RiverXkbBindingV1,
     river_xkb_bindings_v1::RiverXkbBindingsV1,
 };
-
-mod river {
-    pub extern crate wayland_client;
-    pub use wayland_client::protocol::*;
-
-    mod interfaces {
-        pub(super) mod rwm {
-            pub use wayland_client::protocol::__interfaces::*;
-            wayland_scanner::generate_interfaces!("./protocol/river-window-management-v1.xml");
-        }
-
-        pub(super) mod rxkb {
-            use super::rwm::*;
-            wayland_scanner::generate_interfaces!("./protocol/river-xkb-bindings-v1.xml");
-        }
-    }
-
-    use self::interfaces::rwm::*;
-    use self::interfaces::rxkb::*;
-    wayland_scanner::generate_client_code!("./protocol/river-window-management-v1.xml");
-    wayland_scanner::generate_client_code!("./protocol/river-xkb-bindings-v1.xml");
-}
 
 #[derive(Debug, Clone, Copy)]
 enum Action {
@@ -584,7 +563,7 @@ impl Dispatch<RiverWindowManagerV1, ()> for AppData {
         _conn: &Connection,
         qh: &QueueHandle<Self>,
     ) {
-        use river::river_window_manager_v1::Event;
+        use protocol::river_window_manager_v1::Event;
         match event {
             Event::Unavailable => {
                 eprintln!("Error: Another WM is already running");
@@ -612,9 +591,9 @@ impl Dispatch<RiverWindowManagerV1, ()> for AppData {
     }
 
     wayland_client::event_created_child!(AppData, RiverWindowManagerV1, [
-        river::river_window_manager_v1::EVT_WINDOW_OPCODE => (RiverWindowV1, ()),
-        river::river_window_manager_v1::EVT_OUTPUT_OPCODE => (RiverOutputV1, ()),
-        river::river_window_manager_v1::EVT_SEAT_OPCODE => (RiverSeatV1, ())
+        protocol::river_window_manager_v1::EVT_WINDOW_OPCODE => (RiverWindowV1, ()),
+        protocol::river_window_manager_v1::EVT_OUTPUT_OPCODE => (RiverOutputV1, ()),
+        protocol::river_window_manager_v1::EVT_SEAT_OPCODE => (RiverSeatV1, ())
     ]);
 }
 
@@ -627,7 +606,7 @@ impl Dispatch<RiverWindowV1, ()> for AppData {
         _conn: &Connection,
         _qh: &QueueHandle<Self>,
     ) {
-        use river::river_window_v1::Event;
+        use protocol::river_window_v1::Event;
         let window = match state.wm.windows.iter_mut().find(|o| &o.proxy == proxy) {
             Some(window) => window,
             None => return,
@@ -673,7 +652,7 @@ impl Dispatch<RiverOutputV1, ()> for AppData {
         _conn: &Connection,
         _qh: &QueueHandle<Self>,
     ) {
-        use river::river_output_v1::Event;
+        use protocol::river_output_v1::Event;
         let output = state
             .wm
             .outputs
@@ -700,7 +679,7 @@ impl Dispatch<RiverSeatV1, ()> for AppData {
         _conn: &Connection,
         _qh: &QueueHandle<Self>,
     ) {
-        use river::river_seat_v1::Event;
+        use protocol::river_seat_v1::Event;
         let seat = state.wm.seats.get_mut(&proxy.id()).expect("Seat not found");
         match event {
             Event::Removed => seat.removed = true,
@@ -727,7 +706,7 @@ impl Dispatch<RiverXkbBindingV1, ObjectId> for AppData {
         _conn: &Connection,
         _qh: &QueueHandle<Self>,
     ) {
-        use river::river_xkb_binding_v1::Event;
+        use protocol::river_xkb_binding_v1::Event;
         let seat = state.wm.seats.get_mut(data).expect("Seat not found");
         let binding = seat
             .xkb_bindings
@@ -750,7 +729,7 @@ impl Dispatch<RiverPointerBindingV1, ObjectId> for AppData {
         _conn: &Connection,
         _qh: &QueueHandle<Self>,
     ) {
-        use river::river_pointer_binding_v1::Event;
+        use protocol::river_pointer_binding_v1::Event;
         let seat = state.wm.seats.get_mut(data).expect("Seat not found");
         let binding = seat
             .pointer_bindings
