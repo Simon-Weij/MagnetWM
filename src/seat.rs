@@ -63,7 +63,7 @@ impl Seat {
             Action::None => {}
             // Don't pass WAYLAND_DEBUG on to children, the added noise makes
             // debugging the window manager itself impractical.
-            Action::SpawnKitty => match std::process::Command::new("kitty")
+            Action::Spawn => match std::process::Command::new("kitty")
                 .env_remove("WAYLAND_DEBUG")
                 .spawn()
             {

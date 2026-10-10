@@ -26,7 +26,7 @@ pub struct AppData {
 #[derive(Debug, Clone, Copy)]
 pub enum Action {
     None,
-    SpawnKitty,
+    Spawn,
     Close,
     FocusNext,
     Exit,

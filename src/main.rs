@@ -5,6 +5,7 @@ use crate::{
 
 use wayland_client::Connection;
 
+mod config;
 mod events;
 mod output;
 mod protocol;
